@@ -4,6 +4,7 @@
 // Author            : Alexander Harrison Greer '20
 // Date created      : May 5, 2019
 // Purpose           : Input ranked choice voting data in an election format and determine the winner(s)
+// Github            : https://github.com/Alexander-Greer/ranked_choice_voting
 // Revision History  :
 //
 // Date(YYYYMMDD) Author      Time Spent    Revision
@@ -17,6 +18,9 @@
 //
 // Date(YYYYMMDD) Author      Time Spent    Revision
 // 20190512       A.H.Greer   4 hrs         JS and Spreadsheet Integration
+// 
+// Date(YYYYMMDD) Author      Time Spent    Revision
+// 20190514       A.H.Greer   1 hrs         Fixed Reapportioning Oversight
 // 
 // *********************************************************************
 
@@ -55,6 +59,26 @@ var electionInfoData = spreadsheet.getSheetByName("Election Info").getDataRange(
 // https://stackoverflow.com/questions/1960473/get-all-unique-values-in-a-javascript-array-remove-duplicates
 function unique(value, index, self) { 
   return self.indexOf(value) === index;
+}
+
+// cleanse_empty_votes()
+// This function is used sparingly in the event that a voter's chosen list of candidates are all eliminated during the
+// tallying process. This function is used to catch any empty lists in case in order to prevent any program errors.
+function cleanse_empty_votes(input_votes){
+  for (var vote in input_votes){
+    if (input_votes[vote] === []){
+        input_votes.splice(vote, 1);
+    }
+  }
+}
+
+// tranpose()
+// switches the rows and columns of a two-dimensional array
+// https://stackoverflow.com/questions/4492678/swap-rows-with-columns-transposition-of-a-matrix-in-javascript/13241545
+function transpose(array){
+    return Object.keys(array[0]).map(function(c) {
+        return array.map(function(r) { return r[c]; });
+    });
 }
 
 // gather_votes()
@@ -101,28 +125,26 @@ function tally_votes(list_of_candidates, input_list, reapportioned_list, list_of
   // initialize two temporary lists to be used in this function
   var output = [];
   var placeholder_list = [];
-  
+    
   // remove any exhausted votes
   for (var voter in input_list){
     try{
-      if (list_of_candidates.includes(input_list[voter][0]) === false){
+      if (list_of_candidates.indexOf(input_list[voter][0]) === -1){
         // https://love2dev.com/blog/javascript-remove-from-array/
         input_list.splice(voter, 1);
       }
     }
     
     catch(error){
-      //Logger.log(error);
     }
-    
+       
     try{
-      if (list_of_secured_candidates.includes(input_list[voter][0])){
+      if (list_of_secured_candidates.indexOf(input_list[voter][0]) !== -1){
         input_list.splice(voter, 1);
       }
     }
     
     catch(error){
-      //Logger.log(error);
     }
   }
   
@@ -152,26 +174,6 @@ function tally_votes(list_of_candidates, input_list, reapportioned_list, list_of
     placeholder_list = [];
   }
   return output;
-}
-
-// cleanse_empty_votes()
-// This function is used sparingly in the event that a voter's chosen list of candidates are all eliminated during the
-// tallying process. This function is used to catch any empty lists in case in order to prevent any program errors.
-function cleanse_empty_votes(input_votes){
-  for (var vote in input_votes){
-    if (input_votes[vote] === []){
-        input_votes.splice(vote, 1);
-    }
-  }
-}
-
-// tranpose()
-// switches the rows and columns of a two-dimensional array
-// https://stackoverflow.com/questions/4492678/swap-rows-with-columns-transposition-of-a-matrix-in-javascript/13241545
-function transpose(array){
-    return Object.keys(array[0]).map(function(c) {
-        return array.map(function(r) { return r[c]; });
-    });
 }
 
 // reapportion()
@@ -266,7 +268,7 @@ function reapportion(votes, vote_threshold, secured_candidates, reapportioned_li
       Logger.log(error);
     }
     
-            Logger.log(reapportioned_list);
+    Logger.log(reapportioned_list);
       
     cleanse_empty_votes(votes)
       
@@ -306,8 +308,8 @@ function reapportion(votes, vote_threshold, secured_candidates, reapportioned_li
           // if the current voter voted for the secured candidate as their first choice,
           // remove the secured candidate's vote from the growing tally
           if (votes[voter][0] === tallied_votes[candidate][0]){
-            votes[voter].splice(0, 1);
-            Logger.log(tallied_votes);
+            votes.splice(voter, 1);
+            Logger.log(votes.length);
           }
                     
           //Logger.log(votes);
@@ -431,17 +433,6 @@ function tallyBallots(){
   var tally_list_to_fill = [];
   
   // tallied_votes = tally_votes(LIST_OF_CANDIDATES, VOTES, REAPPORTIONED_LIST, SECURED_CANDIDATES);
-  
-  /*
-  Logger.log(tally_votes(LIST_OF_CANDIDATES, VOTES, REAPPORTIONED_LIST, SECURED_CANDIDATES));
-  Logger.log("SEC");
-  Logger.log(SECURED_CANDIDATES);
-  
-  Logger.log("ROUND 1");
-  Logger.log(reapportion(VOTES, VOTE_THRESHOLD, SECURED_CANDIDATES, REAPPORTIONED_LIST, LIST_OF_CANDIDATES));
-  Logger.log("ROUND 2");
-  Logger.log(reapportion(VOTES, VOTE_THRESHOLD, SECURED_CANDIDATES, REAPPORTIONED_LIST, LIST_OF_CANDIDATES));
-  */
   
   // ----------------------------------------------------------------
   //  __  __      _        _                  
