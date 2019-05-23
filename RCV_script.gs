@@ -21,6 +21,9 @@
 // 
 // Date(YYYYMMDD) Author      Time Spent    Revision
 // 20190514       A.H.Greer   1 hrs         Fixed Reapportioning Oversight
+//
+// Date(YYYYMMDD) Author      Time Spent    Revision
+// 20190518       A.H.Greer   0.5 hrs       Added "Email Address" Column Safety Feature
 // 
 // *********************************************************************
 
@@ -90,7 +93,8 @@ function gather_votes(){
   // https://yagisanatode.com/2017/12/13/google-apps-script-iterating-through-ranges-in-sheets-the-right-and-wrong-way/
   var rangeData = formResponses.getDataRange();
   var lastRow = rangeData.getLastRow();
-  
+  var lastColumn = rangeData.getLastColumn();
+    
   var column_counter = 1;
   while (formResponses.getRange(1, column_counter).isBlank() == false){
     column_counter += 1;
@@ -103,8 +107,11 @@ function gather_votes(){
     var tempArray = [];
     // So long as there is a vote in the current row, put the votes into the correctly formatted Array
     if (i < lastRow){
-      for (var j = 1; j < column_counter-2; j++){
-        tempArray.push(formResponsesData[i][j]);
+      for (var j = 1; j < lastColumn; j++){
+        // Don't put the user's email address into the voting tally, if it is there
+        if (formResponsesData[0][j] !== 'Email Address'){
+          tempArray.push(formResponsesData[i][j]);
+        }
       }
 
       votes.push(tempArray);
@@ -190,7 +197,7 @@ function reapportion(votes, vote_threshold, secured_candidates, reapportioned_li
   // This if statement is a simplification step to reduce program time. If there are fewer than three candidates
   // remaining (i.e. two), then the complex reapportioning process does not need to take place, and the one with
   // the higher number of votes can simply be added to the chosen candidates and the other eliminated.
-  if (tallied_votes.length > 3){
+  if (tallied_votes.length >= 3){
     
     cleanse_empty_votes(votes);
     
@@ -352,21 +359,29 @@ function reapportion(votes, vote_threshold, secured_candidates, reapportioned_li
   
   // (i.e. if there are only two candidates left)
   else{
-    Logger.log("No More Reapportioning Necessary!");
     
+    Logger.log("No More Reapportioning Necessary!");
     tallied_votes = tally_votes(list_of_candidates, votes, reapportioned_list, secured_candidates);
-
-    if (tallied_votes[0][1] > tallied_votes[1][1]){
+    
+    if (tallied_votes.length === 1){
       secured_candidates.push(tallied_votes[0][0]);
     }
     
     else{
-      secured_candidates.push(tallied_votes[1][0])
+      if (tallied_votes[0][1] > tallied_votes[1][1]){
+        Logger.log("Or Here?");
+        secured_candidates.push(tallied_votes[0][0]);
+      }
+    
+      else{
+        secured_candidates.push(tallied_votes[1][0])
+      }
     }
   }
   
   // the final return: the list containing the secured candidates
   Logger.log("Secured Candidates: ");
+  Logger.log(secured_candidates);
   return secured_candidates
 }
 
